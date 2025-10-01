@@ -76,6 +76,31 @@
     border:2px solid var(--gray-300); background: #C8BCA8;
     box-shadow:var(--shadow-md); touch-action:none; cursor:grab;
   }
+  /* NEW: 지도 초기화 버튼 스타일 */
+  .reset-view-btn {
+      position: absolute;
+      bottom: 16px;
+      right: 16px;
+      width: 44px;
+      height: 44px;
+      font-size: 1.5rem;
+      border: 2px solid var(--gray-300);
+      background-color: white;
+      border-radius: 50%;
+      cursor: pointer;
+      z-index: 20;
+      box-shadow: var(--shadow-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      line-height: 1;
+      transition: transform 0.2s;
+  }
+  .reset-view-btn:hover {
+      transform: scale(1.1) rotate(90deg);
+  }
+
   .market-map{ position:relative; width:2400px; height:600px; transform-origin:0 0; background-color: #E9E0D2; }
   .shop-area { position: absolute; left: 0; right: 0; background-color: #DCD7CD; }
   .area-top { top: 0; height: 250px; }
@@ -142,6 +167,7 @@
     .sidebar { position: fixed; bottom: 0; left: 0; right: 0; width: 100%; height: 90vh; max-height: 90vh; border-left: none; border-top: 1px solid var(--gray-200); border-top-left-radius: 20px; border-top-right-radius: 20px; transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); z-index: 1000; }
     .sidebar:not(.hidden) { transform: translateY(calc(100% - 45vh)); }
     .shop-pin .tooltip { display: none; }
+    .reset-view-btn { bottom: 8px; right: 8px; width: 40px; height: 40px; }
   }
 </style>
 </head>
@@ -193,6 +219,7 @@
           <div class="alley" style="left: 1350px;"></div> <div class="alley" style="left: 1800px;"></div>
           <div class="congestion-overlay" id="congestionOverlay"></div>
         </div>
+        <button id="resetViewBtn" class="reset-view-btn" title="지도 초기화">🔄</button>
       </div>
     </div>
     
@@ -230,90 +257,82 @@
 
 <script>
 // ===============================================================
-// 💡 가게 데이터 수정 가이드
-// 이 배열에 가게 정보를 추가, 수정, 삭제하세요.
+// 💡 가게 데이터
 // ===============================================================
 const SHOPS = [
-  // 윗줄 (y: 125, 170, 215) - 왼쪽부터 오른쪽으로 배치
-  { id:"t34", name:"저팔계", category:"음식점", icon:"🥓", phone:"041-833-5885", desc:"돼지고기구이, 삼겹살", x:400, y:215, open:null, close:null, goodtrae: true },
-  { id:"t32", name:"투데이 충남", category:"기타", icon:"📰", phone:"041-832-5884", desc:"투데이 충남을 발간합니다", x:180, y:170, open: null, close: null, goodtrae: false },
-  { id:"t31", name:"기뮤공방", category:"의류/잡화", icon:"🌳", phone:"010-1234-5678", desc:"수공예제품 판매", x:260, y:170, open:15, close:20, goodtrae: false },
-  { id:"t30", name:"김현경 헤어샵", category:"기타", icon:"💇‍♀️", phone:"041-832-7557", desc:"고양이 상주중", x:150, y:125, open:10, close:18, goodtrae: false },
-  { id:"t29", name:"령천암", category:"기타", icon:"🔔", phone:"010-6435-0863", desc:"점, 사주, 타로 가능", x:230, y:125, open:15, close:20, goodtrae: false },
-  { id:"t28", name:"쪼물쪼물엄마손맛찬집", category:"가공/즉석식품", icon:"🍱", phone:"041-836-2461", desc:"엄마손맛으로 만든 반찬", x:310, y:125, open:13, close:20, goodtrae: true },
-  { id:"t27", name:"충남상회", category:"가공/즉석식품", icon:"🦐", phone:"041-835-2086", desc:"젓갈류 취급", x:390, y:125, open:10, close:18, goodtrae: false },
-  { id:"t26", name:"장터한우국밥", category:"음식점", icon:"🍲", phone:"041-834-4377", desc:"한우를 쓴 전통국밥", x:480, y:125, open:9, close:19, goodtrae: true },
-  { id:"t25", name:"제일상회", category:"의류/잡화", icon:"🖼️", phone:"041-834-4115", desc:"없는 것 빼고 다 있음", x:570, y:125, open:9, close:18, goodtrae: false },
-  { id:"t24", name:"이화 양장수선", category:"의류/잡화", icon:"🥼", phone:"041-832-9491", desc:"하루면 옷수선", x:660, y:125, open:10, close:18, goodtrae: true },
-  { id:"t23", name:"서울닭집", category:"수/축산물", icon:"🐔", phone:"010-1234-5678", desc:"시골 통닭구이", x:750, y:125, open:9, close:19, goodtrae: true },
-  { id:"t22", name:"고향촌", category:"음식점", icon:"🍲", phone:"010-1234-5678", desc:"삼겹살, 보리밥, 김치찌개", x:840, y:125, open:13, close:20, goodtrae: true },
-  { id:"t21", name:"정가연 미용실", category:"기타", icon:"💇‍♀️", phone:"010-1234-5678", desc:"최신헤어스타일링", x:960, y:125, open:10, close:19, goodtrae: false },
-  { id:"t20", name:"용전떡집", category:"가공/즉석식품", icon:"🍡", phone:"041-833-8530", desc:"따끈한 떡 판매", x:1045, y:125, open:10, close:18, goodtrae: true },
-  { id:"t19", name:"자갈치회센타", category:"수/축산물", icon:"🐟", phone:"041-833-5959", desc:"모둠회, 연어회 전문", x:1130, y:125, open:11, close:20, goodtrae: true },
-  { id:"t18", name:"오미떡집", category:"가공/즉석식품", icon:"🍡", phone:"041-833-6268", desc:"전통있는 가래떡집", x:1215, y:125, open:10, close:18, goodtrae: false },
-  { id:"t17", name:"덕성상회", category:"가공/즉석식품", icon:"🫚", phone:"041-832-8485", desc:"생각, 더덕 취급", x:1300, y:125, open:10, close:20, goodtrae: false },
-  { id:"t16", name:"부산상회", category:"가공/즉석식품", icon:"🦑", phone:"041-835-4585", desc:"건오징어 전문", x:1380, y:125, open:9, close:19, goodtrae: false },
-  { id:"t15", name:"동양식품", category:"가공/즉석식품", icon:"🌶️", phone:"041-835-4367", desc:"청양고추보다 매움", x:1450, y:125, open:10, close:19, goodtrae: false },
-  { id:"t14", name:"시장순대", category:"음식점", icon:"🍲", phone:"041-833-8051", desc:"따끈한 순대국밥", x:1520, y:125, open:10, close:19, goodtrae: true },
-  { id:"t13", name:"부부반찬", category:"가공/즉석식품", icon:"🥬", phone:"041-832-0727", desc:"종가집 배추김치", x:1590, y:125, open:9, close:18, goodtrae: true },
-  { id:"t12", name:"규암떡집", category:"가공/즉석식품", icon:"🍡", phone:"041-835-3950", desc:"갓뽑은 떡 있어요", x:1660, y:125, open:9, close:17, goodtrae: true },
-  { id:"t11", name:"돈우정육점", category:"수/축산물", icon:"🥓", phone:"041-837-8009", desc:"수요일은 소잡는날", x:1730, y:125, open:10, close:20, goodtrae: false },
-  { id:"t10", name:"시장중앙닭집", category:"수/축산물", icon:"🐔", phone:"010-1234-5678", desc:"꼬끼오", x:1830, y:125, open:10, close:18, goodtrae: true },
-  { id:"t9", name:"영천상회", category:"수/축산물", icon:"🐟", phone:"041-835-3951", desc:"조개, 전복, 홍어 등", x:1905, y:125, open:9, close:18, goodtrae: true },
-  { id:"t8", name:"보령수산", category:"수/축산물", icon:"🐠", phone:"010-7741-3281", desc:"신선한 물고기 취급", x:1980, y:125, open:10, close:19, goodtrae: true },
-  { id:"t7", name:"고기백화점", category:"수/축산물", icon:"🥓", phone:"041-933-7878", desc:"신선한 고기 취급", x:2055, y:125, open:10, close:20, goodtrae: false },
-  { id:"t6", name:"우리반찬", category:"가공/즉석식품", icon:"🥬", phone:"041-832-9151", desc:"배추김치 전문", x:2130, y:125, open:10, close:19, goodtrae: true },
-  { id:"t5", name:"강남떡집", category:"가공/즉석식품", icon:"🍡", phone:"041-834-4545", desc:"맛있는 떡 만드는 중", x:2205, y:125, open:8, close:18, goodtrae: true },
-  { id:"t4", name:"연상회", category:"과채류", icon:"🥦", phone:"041-836-6698", desc:"신선한 채소들 취급", x:2280, y:125, open:9, close:19, goodtrae: true },
-  { id:"t1a", name:"화랑회수산", category:"수/축산물", icon:"🐟", phone:"010-8606-6472", desc:"조개, 전복, 홍어 등", x:2355, y:125, open:9, close:18, goodtrae: true },
-
-  // 아랫줄 (y: 475) - 왼쪽부터 오른쪽으로 배치
-  { id:"c4", name:"종로엠스쿨", category:"기타", icon:"🏫", phone:"", desc:"학원", x:230, y:475, open:12, close:22, goodtrae:false},
-  { id:"c3", name:"중앙포목", category:"의류/잡화", icon:"🧵", phone:"", desc:"원단 및 부자재", x:140, y:475, open:9, close:18, goodtrae:false},
-  { id:"c2", name:"부여칼국수", category:"음식점", icon:"🍜", phone:"", desc:"손칼국수 전문", x:50, y:475, open:11, close:20, goodtrae:true},
-  { id:"b1", name:"송이상회", category:"과채류", icon:"🍎", phone:"041-836-3625", desc:"과일·채소", x:95, y:475, open:7, close:21, goodtrae:false},
-  { id:"b2", name:"기술자 떡집", category:"가공/즉석식품", icon:"🍡", phone:"041-832-9364", desc:"모시송편, 맞춤떡", x:185, y:475, open:8, close:18, goodtrae:false},
-  { id:"b3", name:"235 식품", category:"가공/즉석식품", icon:"🛒", phone:"041-835-3414", desc:"야채 도소매", x:275, y:475, open:8, close:19, goodtrae:false},
-  { id:"b4", name:"제일정육 2호점", category:"수/축산물", icon:"🥩", phone:"041-836-3748", desc:"생고기·한우암소·암돼지", x:320, y:475, open:8, close:20, goodtrae:false},
-  { id:"b5", name:"부곡 쌀상회", category:"기타", icon:"🌾", phone:"041-835-2114", desc:"쌀·잡곡", x:365, y:475, open:8, close:18, goodtrae:false},
-  { id:"b6", name:"은미네 반찬", category:"가공/즉석식품", icon:"🥗", phone:"041-835-0229", desc:"각종 김치, 젓갈류", x:410, y:475, open:8, close:19, goodtrae:false},
-  { id:"b7", name:"한양 수산", category:"수/축산물", icon:"🐟", phone:"041-835-4095", desc:"각종 해물·수산물", x:480, y:475, open:7, close:18, goodtrae:false},
-  { id:"b8", name:"동준 상회", category:"과채류", icon:"🥕", phone:"041-835-5413", desc:"각종 야채", x:545, y:475, open:8, close:19, goodtrae:false},
-  { id:"b9", name:"대동 상회", category:"기타", icon:"🌾", phone:"041-835-2114", desc:"쌀·잡곡", x:610, y:475, open:8, close:18, goodtrae:false},
-  { id:"b10", name:"원모할인 마트", category:"가공/즉석식품", icon:"🧂", phone:"041-835-3822", desc:"건어물·견과·식자재", x:675, y:475, open:8, close:20, goodtrae:true},
-  { id:"b11", name:"시장맛집", category:"음식점", icon:"🍜", phone:"041-834-9998", desc:"올갱이해장국·칼국수·떡국", x:740, y:475, open:10, close:20, goodtrae:true},
-  { id:"b12", name:"중앙 속옷", category:"의류/잡화", icon:"🩲", phone:"041-836-3328", desc:"속옷·내복", x:805, y:475, open:9, close:19, goodtrae:false},
-  { id:"b14", name:"강원 고추", category:"가공/즉석식품", icon:"🌶️", phone:"?", desc:"고추·양념", x:870, y:475, open:8, close:18, goodtrae:false},
-  { id:"b15", name:"할인정육점과 채소", category:"수/축산물", icon:"🥓", phone:"010-7791-4920", desc:"정육·야채", x:960, y:475, open:8, close:20, goodtrae:false},
-  { id:"b16", name:"토속가마솥 통닭&분식", category:"음식점", icon:"🍗", phone:"041-835-9945", desc:"통닭·순대·족발·누른고기", x:1045, y:475, open:10, close:21, goodtrae:true},
-  { id:"b17", name:"맛깔손 반찬분식", category:"음식점", icon:"🍱", phone:"?", desc:"반찬·분식", x:1130, y:475, open:10, close:20, goodtrae:false},
-  { id:"b19", name:"아름 상회", category:"과채류", icon:"🥒", phone:"010-3417-5326", desc:"야채·나물", x:1215, y:475, open:8, close:19, goodtrae:false},
-  { id:"b20", name:"자연고추 상회", category:"가공/즉석식품", icon:"🫚", phone:"041-835-8836", desc:"고추·마늘·기름", x:1300, y:475, open:8, close:18, goodtrae:false},
-  { id:"b22a", name:"부뚜막 식당", category:"음식점", icon:"🍜", phone:"?", desc:"칼국수", x:1380, y:475, open:10, close:20, goodtrae:false},
-  { id:"b22b", name:"Fat burger slim", category:"음식점", icon:"🍔", phone:"?", desc:"수제 햄버거", x:1450, y:475, open:11, close:21, goodtrae:false},
-  { id:"b23", name:"왕곰탕", category:"음식점", icon:"🍲", phone:"041-835-3243", desc:"곰탕·양곰탕·도가니탕·수육", x:1590, y:475, open:9, close:21, goodtrae:true},
-  { id:"b24a", name:"wednesday", category:"의류/잡화", icon:"🍺", phone:"041-837-0795", desc:"감성 바", x:1660, y:475, open:14, close:23, goodtrae:true},
-  { id:"b24b", name:"SADAM", category:"음식점", icon:"🍶", phone:"041-837-0795", desc:"주류 판매", x:1730, y:475, open:12, close:22, goodtrae:true},
-  { id:"b24c", name:"대화 할인마트", category:"가공/즉석식품", icon:"🛒", phone:"041-837-0795", desc:"생활용품", x:1830, y:475, open:8, close:21, goodtrae:true},
-  { id:"c1", name:"구름 한조각", category:"음식점", icon:"🍰", phone:"", desc:"디저트 카페", x:1905, y:475, open:12, close:19, goodtrae:false},
+  // 윗줄 (y: 125, 170, 215)
+  { id:"t34", name:"저팔계", category:"음식점", icon:"🥓", phone:"041-833-5885", desc:"돼지고기구이, 삼겹살", x:2000, y:215, open:null, close:null, goodtrae: true },
+  { id:"t32", name:"투데이 충남", category:"기타", icon:"📰", phone:"041-832-5884", desc:"투데이 충남을 발간합니다", x:2220, y:170, open: null, close: null, goodtrae: false },
+  { id:"t31", name:"기뮤공방", category:"의류/잡화", icon:"🌳", phone:"010-1234-5678", desc:"수공예제품 판매", x:2140, y:170, open:15, close:20, goodtrae: false },
+  { id:"t30", name:"김현경 헤어샵", category:"기타", icon:"💇‍♀️", phone:"041-832-7557", desc:"고양이 상주중", x:2250, y:125, open:10, close:18, goodtrae: false },
+  { id:"t29", name:"령천암", category:"기타", icon:"🔔", phone:"010-6435-0863", desc:"점, 사주, 타로 가능", x:2170, y:125, open:15, close:20, goodtrae: false },
+  { id:"t28", name:"쪼물쪼물엄마손맛찬집", category:"가공/즉석식품", icon:"🍱", phone:"041-836-2461", desc:"엄마손맛으로 만든 반찬", x:2090, y:125, open:13, close:20, goodtrae: true },
+  { id:"t27", name:"충남상회", category:"가공/즉석식품", icon:"🦐", phone:"041-835-2086", desc:"젓갈류 취급", x:2010, y:125, open:10, close:18, goodtrae: false },
+  { id:"t26", name:"장터한우국밥", category:"음식점", icon:"🍲", phone:"041-834-4377", desc:"한우를 쓴 전통국밥", x:1920, y:125, open:9, close:19, goodtrae: true },
+  { id:"t25", name:"제일상회", category:"의류/잡화", icon:"🖼️", phone:"041-834-4115", desc:"없는 것 빼고 다 있음", x:1830, y:125, open:9, close:18, goodtrae: false },
+  { id:"t24", name:"이화 양장수선", category:"의류/잡화", icon:"🥼", phone:"041-832-9491", desc:"하루면 옷수선", x:1740, y:125, open:10, close:18, goodtrae: true },
+  { id:"t23", name:"서울닭집", category:"수/축산물", icon:"🐔", phone:"010-1234-5678", desc:"시골 통닭구이", x:1650, y:125, open:9, close:19, goodtrae: true },
+  { id:"t22", name:"고향촌", category:"음식점", icon:"🍲", phone:"010-1234-5678", desc:"삼겹살, 보리밥, 김치찌개", x:1560, y:125, open:13, close:20, goodtrae: true },
+  { id:"t21", name:"정가연 미용실", category:"기타", icon:"💇‍♀️", phone:"010-1234-5678", desc:"최신헤어스타일링", x:1440, y:125, open:10, close:19, goodtrae: false },
+  { id:"t20", name:"용전떡집", category:"가공/즉석식품", icon:"🍡", phone:"041-833-8530", desc:"따끈한 떡 판매", x:1355, y:125, open:10, close:18, goodtrae: true },
+  { id:"t19", name:"자갈치회센타", category:"수/축산물", icon:"🐟", phone:"041-833-5959", desc:"모둠회, 연어회 전문", x:1270, y:125, open:11, close:20, goodtrae: true },
+  { id:"t18", name:"오미떡집", category:"가공/즉석식품", icon:"🍡", phone:"041-833-6268", desc:"전통있는 가래떡집", x:1185, y:125, open:10, close:18, goodtrae: false },
+  { id:"t17", name:"덕성상회", category:"가공/즉석식품", icon:"🫚", phone:"041-832-8485", desc:"생각, 더덕 취급", x:1100, y:125, open:10, close:20, goodtrae: false },
+  { id:"t16", name:"부산상회", category:"가공/즉석식품", icon:"🦑", phone:"041-835-4585", desc:"건오징어 전문", x:1020, y:125, open:9, close:19, goodtrae: false },
+  { id:"t15", name:"동양식품", category:"가공/즉석식품", icon:"🌶️", phone:"041-835-4367", desc:"청양고추보다 매움", x:950, y:125, open:10, close:19, goodtrae: false },
+  { id:"t14", name:"시장순대", category:"음식점", icon:"🍲", phone:"041-833-8051", desc:"따끈한 순대국밥", x:880, y:125, open:10, close:19, goodtrae: true },
+  { id:"t13", name:"부부반찬", category:"가공/즉석식품", icon:"🥬", phone:"041-832-0727", desc:"종가집 배추김치", x:810, y:125, open:9, close:18, goodtrae: true },
+  { id:"t12", name:"규암떡집", category:"가공/즉석식품", icon:"🍡", phone:"041-835-3950", desc:"갓뽑은 떡 있어요", x:740, y:125, open:9, close:17, goodtrae: true },
+  { id:"t11", name:"돈우정육점", category:"수/축산물", icon:"🥓", phone:"041-837-8009", desc:"수요일은 소잡는날", x:670, y:125, open:10, close:20, goodtrae: false },
+  { id:"t10", name:"시장중앙닭집", category:"수/축산물", icon:"🐔", phone:"010-1234-5678", desc:"꼬끼오", x:570, y:125, open:10, close:18, goodtrae: true },
+  { id:"t9", name:"영천상회", category:"수/축산물", icon:"🐟", phone:"041-835-3951", desc:"조개, 전복, 홍어 등", x:495, y:125, open:9, close:18, goodtrae: true },
+  { id:"t8", name:"보령수산", category:"수/축산물", icon:"🐠", phone:"010-7741-3281", desc:"신선한 물고기 취급", x:420, y:125, open:10, close:19, goodtrae: true },
+  { id:"t7", name:"고기백화점", category:"수/축산물", icon:"🥓", phone:"041-933-7878", desc:"신선한 고기 취급", x:345, y:125, open:10, close:20, goodtrae: false },
+  { id:"t6", name:"우리반찬", category:"가공/즉석식품", icon:"🥬", phone:"041-832-9151", desc:"배추김치 전문", x:270, y:125, open:10, close:19, goodtrae: true },
+  { id:"t5", name:"강남떡집", category:"가공/즉석식품", icon:"🍡", phone:"041-834-4545", desc:"맛있는 떡 만드는 중", x:195, y:125, open:8, close:18, goodtrae: true },
+  { id:"t4", name:"연상회", category:"과채류", icon:"🥦", phone:"041-836-6698", desc:"신선한 채소들 취급", x:120, y:125, open:9, close:19, goodtrae: true },
+  { id:"t1a", name:"화랑회수산", category:"수/축산물", icon:"🐟", phone:"010-8606-6472", desc:"조개, 전복, 홍어 등", x:45, y:125, open:9, close:18, goodtrae: true },
+  // 아랫줄 (y: 475)
+  { id:"c4", name:"종로엠스쿨", category:"기타", icon:"🏫", phone:"", desc:"학원", x:2170, y:475, open:12, close:22, goodtrae:false},
+  { id:"c3", name:"중앙포목", category:"의류/잡화", icon:"🧵", phone:"", desc:"원단 및 부자재", x:2260, y:475, open:9, close:18, goodtrae:false},
+  { id:"c2", name:"부여칼국수", category:"음식점", icon:"🍜", phone:"", desc:"손칼국수 전문", x:2350, y:475, open:11, close:20, goodtrae:true},
+  { id:"b1", name:"송이상회", category:"과채류", icon:"🍎", phone:"041-836-3625", desc:"과일·채소", x:2305, y:475, open:7, close:21, goodtrae:false},
+  { id:"b2", name:"기술자 떡집", category:"가공/즉석식품", icon:"🍡", phone:"041-832-9364", desc:"모시송편, 맞춤떡", x:2215, y:475, open:8, close:18, goodtrae:false},
+  { id:"b3", name:"235 식품", category:"가공/즉석식품", icon:"🛒", phone:"041-835-3414", desc:"야채 도소매", x:2125, y:475, open:8, close:19, goodtrae:false},
+  { id:"b4", name:"제일정육 2호점", category:"수/축산물", icon:"🥩", phone:"041-836-3748", desc:"생고기·한우암소·암돼지", x:2080, y:475, open:8, close:20, goodtrae:false},
+  { id:"b5", name:"부곡 쌀상회", category:"기타", icon:"🌾", phone:"041-835-2114", desc:"쌀·잡곡", x:2035, y:475, open:8, close:18, goodtrae:false},
+  { id:"b6", name:"은미네 반찬", category:"가공/즉석식품", icon:"🥗", phone:"041-835-0229", desc:"각종 김치, 젓갈류", x:1990, y:475, open:8, close:19, goodtrae:false},
+  { id:"b7", name:"한양 수산", category:"수/축산물", icon:"🐟", phone:"041-835-4095", desc:"각종 해물·수산물", x:1920, y:475, open:7, close:18, goodtrae:false},
+  { id:"b8", name:"동준 상회", category:"과채류", icon:"🥕", phone:"041-835-5413", desc:"각종 야채", x:1855, y:475, open:8, close:19, goodtrae:false},
+  { id:"b9", name:"대동 상회", category:"기타", icon:"🌾", phone:"041-835-2114", desc:"쌀·잡곡", x:1790, y:475, open:8, close:18, goodtrae:false},
+  { id:"b10", name:"원모할인 마트", category:"가공/즉석식품", icon:"🧂", phone:"041-835-3822", desc:"건어물·견과·식자재", x:1725, y:475, open:8, close:20, goodtrae:true},
+  { id:"b11", name:"시장맛집", category:"음식점", icon:"🍜", phone:"041-834-9998", desc:"올갱이해장국·칼국수·떡국", x:1660, y:475, open:10, close:20, goodtrae:true},
+  { id:"b12", name:"중앙 속옷", category:"의류/잡화", icon:"🩲", phone:"041-836-3328", desc:"속옷·내복", x:1595, y:475, open:9, close:19, goodtrae:false},
+  { id:"b14", name:"강원 고추", category:"가공/즉석식품", icon:"🌶️", phone:"?", desc:"고추·양념", x:1530, y:475, open:8, close:18, goodtrae:false},
+  { id:"b15", name:"할인정육점과 채소", category:"수/축산물", icon:"🥓", phone:"010-7791-4920", desc:"정육·야채", x:1440, y:475, open:8, close:20, goodtrae:false},
+  { id:"b16", name:"토속가마솥 통닭&분식", category:"음식점", icon:"🍗", phone:"041-835-9945", desc:"통닭·순대·족발·누른고기", x:1355, y:475, open:10, close:21, goodtrae:true},
+  { id:"b17", name:"맛깔손 반찬분식", category:"음식점", icon:"🍱", phone:"?", desc:"반찬·분식", x:1270, y:475, open:10, close:20, goodtrae:false},
+  { id:"b19", name:"아름 상회", category:"과채류", icon:"🥒", phone:"010-3417-5326", desc:"야채·나물", x:1185, y:475, open:8, close:19, goodtrae:false},
+  { id:"b20", name:"자연고추 상회", category:"가공/즉석식품", icon:"🫚", phone:"041-835-8836", desc:"고추·마늘·기름", x:1100, y:475, open:8, close:18, goodtrae:false},
+  { id:"b22a", name:"부뚜막 식당", category:"음식점", icon:"🍜", phone:"?", desc:"칼국수", x:1020, y:475, open:10, close:20, goodtrae:false},
+  { id:"b22b", name:"Fat burger slim", category:"음식점", icon:"🍔", phone:"?", desc:"수제 햄버거", x:950, y:475, open:11, close:21, goodtrae:false},
+  { id:"b23", name:"왕곰탕", category:"음식점", icon:"🍲", phone:"041-835-3243", desc:"곰탕·양곰탕·도가니탕·수육", x:810, y:475, open:9, close:21, goodtrae:true},
+  { id:"b24a", name:"wednesday", category:"의류/잡화", icon:"🍺", phone:"041-837-0795", desc:"감성 바", x:740, y:475, open:14, close:23, goodtrae:true},
+  { id:"b24b", name:"SADAM", category:"음식점", icon:"🍶", phone:"041-837-0795", desc:"주류 판매", x:670, y:475, open:12, close:22, goodtrae:true},
+  { id:"b24c", name:"대화 할인마트", category:"가공/즉석식품", icon:"🛒", phone:"041-837-0795", desc:"생활용품", x:570, y:475, open:8, close:21, goodtrae:true},
+  { id:"c1", name:"구름 한조각", category:"음식점", icon:"🍰", phone:"", desc:"디저트 카페", x:495, y:475, open:12, close:19, goodtrae:false},
 ];
-
 // ===============================================================
-// 💡 혼잡도 데이터 수정 가이드
-// A,B,C,D 구역에 맞춰 zones 수정, byHour에서 시간대별 혼잡도 [0,1,2] 수정
+// 💡 혼잡도 데이터
 // ===============================================================
 const CONGESTION_DATA = {
   zones: [
-    { x: 1900, y: 125, radius: 800 }, // A 구역: 윗줄 오른쪽
-    { x: 1900, y: 475, radius: 800 }, // B 구역: 아랫줄 오른쪽
-    { x: 500, y: 125, radius: 800 },  // C 구역: 윗줄 왼쪽
-    { x: 500, y: 475, radius: 800 },  // D 구역: 아랫줄 왼쪽
+    { x: 1900, y: 125, radius: 800 }, { x: 1900, y: 475, radius: 800 },
+    { x: 500, y: 125, radius: 800 },  { x: 500, y: 475, radius: 800 },
   ],
   byHour: {
-    0:[0,0,0,0], 1:[0,0,0,0], 2:[0,0,0,0], 3:[0,0,0,0], 4:[0,0,0,0], 5:[0,0,0,0],
-    6:[0,0,0,0], 7:[0,0,0,0], 8:[1,0,0,0], 9:[1,1,1,0],
-    10:[2,1,0,0], 11:[2,1,0,1], 12:[2,1,1,1], 13:[1,1,1,0],
-    14:[1,1,1,0], 15:[1,1,0,0], 16:[1,0,0,0], 17:[1,0,0,0],
+    0:[0,0,0,0], 1:[0,0,0,0], 2:[0,0,0,0], 3:[0,0,0,0], 4:[0,0,0,0], 5:[0,0,0,0], 6:[0,0,0,0], 7:[0,0,0,0], 8:[1,0,0,0], 9:[1,1,1,0],
+    10:[2,1,0,0], 11:[2,1,0,1], 12:[2,1,1,1], 13:[1,1,1,0], 14:[1,1,1,0], 15:[1,1,0,0], 16:[1,0,0,0], 17:[1,0,0,0],
     18:[0,0,0,0], 19:[0,0,0,0], 20:[0,0,0,0], 21:[0,0,0,0], 22:[0,0,0,0], 23:[0,0,0,0]
   }
 };
@@ -328,13 +347,18 @@ const els = {
   timeSlider: document.getElementById('timeSlider'), timeDisplay: document.getElementById('timeDisplay'),
   congestionOverlay: document.getElementById('congestionOverlay'), infoPanel: document.getElementById('infoPanel'),
   welcomePanel: document.getElementById('welcomePanel'), shopListContainer: document.getElementById('shopListContainer'),
-  sidebarTabs: document.querySelector('.sidebar-tabs'), listTitle: document.getElementById('listTitle')
+  sidebarTabs: document.querySelector('.sidebar-tabs'), listTitle: document.getElementById('listTitle'),
+  resetViewBtn: document.getElementById('resetViewBtn') // NEW: 초기화 버튼
 };
 
 let currentShop = null, currentHour = 12;
 let scale = 1, panX = 0, panY = 0;
 let startPos = { x: 0, y: 0 }, lastPan = { x: 0, y: 0 };
-let isMapDragging = false;
+let isDragging = false;
+let isPinching = false;
+let pinchStartDistance = 0;
+let longPressTimer;
+let didPan = false;
 
 function updateMapTransform() {
   const minScale = getMinScale(); scale = Math.max(minScale, scale);
@@ -353,51 +377,102 @@ function setInitialMapState() {
   updateMapTransform();
 }
 
-const handleDragMove = (e) => {
-    const isTouch = e.touches && e.touches.length > 0;
-    const currentX = isTouch ? e.touches[0].clientX : e.clientX;
-    const currentY = isTouch ? e.touches[0].clientY : e.clientY;
+// ===============================================================
+// 💡 UPDATED: 지도 상호작용(드래그, 줌) 로직
+// ===============================================================
+function getEventPos(e) {
+    return e.touches ? e.touches[0] : e;
+}
 
-    if (!isMapDragging && Math.hypot(currentX - startPos.x, currentY - startPos.y) > 10) {
-        isMapDragging = true;
+function onPointerDown(e) {
+    e.preventDefault();
+    if (e.touches && e.touches.length > 1) {
+        isPinching = true;
+        isDragging = false;
+        pinchStartDistance = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+    } else {
+        isDragging = true;
+        startPos = { x: getEventPos(e).clientX, y: getEventPos(e).clientY };
+        lastPan = { x: panX, y: panY };
+        didPan = false;
     }
-    
-    if (isMapDragging) {
-        if(e.cancelable) e.preventDefault();
-        panX = lastPan.x + (currentX - startPos.x); panY = lastPan.y + (currentY - startPos.y);
-        updateMapTransform();
-    }
-};
-const handleDragEnd = () => {
-    window.removeEventListener('mousemove', handleDragMove); window.removeEventListener('mouseup', handleDragEnd);
-    window.removeEventListener('touchmove', handleDragMove); window.removeEventListener('touchend', handleDragEnd);
-};
-els.mapWrapper.addEventListener('mousedown', (e) => {
-    isMapDragging = false;
-    startPos = { x: e.clientX, y: e.clientY }; lastPan = { x: panX, y: panY };
-    window.addEventListener('mousemove', handleDragMove);
-    window.addEventListener('mouseup', handleDragEnd);
-});
-els.mapWrapper.addEventListener('touchstart', (e) => {
-    if (e.touches.length === 1) {
-        isMapDragging = false;
-        startPos = { x: e.touches[0].clientX, y: e.touches[0].clientY }; lastPan = { x: panX, y: panY };
-        window.addEventListener('touchmove', handleDragMove, { passive: false });
-        window.addEventListener('touchend', handleDragEnd);
-    }
-}, { passive: false });
+}
 
+function onPointerMove(e) {
+    e.preventDefault();
+    if (isPinching && e.touches && e.touches.length > 1) {
+        const newDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY);
+        const scaleFactor = newDist / pinchStartDistance;
+        pinchStartDistance = newDist;
 
+        const rect = els.mapWrapper.getBoundingClientRect();
+        const centerX = (e.touches[0].clientX + e.touches[1].clientX) / 2 - rect.left;
+        const centerY = (e.touches[0].clientY + e.touches[1].clientY) / 2 - rect.top;
+        
+        const pointX = (centerX - panX) / scale;
+        const pointY = (centerY - panY) / scale;
+
+        scale *= scaleFactor;
+        updateMapTransform(); // Pre-clamp for calculation
+        
+        panX = centerX - pointX * scale;
+        panY = centerY - pointY * scale;
+
+    } else if (isDragging) {
+        const currentX = getEventPos(e).clientX;
+        const currentY = getEventPos(e).clientY;
+        const dx = currentX - startPos.x;
+        const dy = currentY - startPos.y;
+
+        if (!didPan && Math.hypot(dx, dy) > 5) {
+            didPan = true;
+        }
+
+        panX = lastPan.x + dx;
+        panY = lastPan.y + dy;
+    }
+    updateMapTransform();
+}
+
+function onPointerUp(e) {
+    if (isPinching) {
+        isPinching = false;
+    }
+    if (isDragging) {
+        isDragging = false;
+    }
+    // Prevent click from firing after a drag
+    if(didPan && e.target.closest('.shop-pin button')) {
+        e.target.closest('.shop-pin button').style.pointerEvents = 'none';
+        setTimeout(() => {
+            e.target.closest('.shop-pin button').style.pointerEvents = 'auto';
+        }, 100);
+    }
+}
+
+els.mapWrapper.addEventListener('mousedown', onPointerDown);
+window.addEventListener('mousemove', onPointerMove);
+window.addEventListener('mouseup', onPointerUp);
+
+els.mapWrapper.addEventListener('touchstart', onPointerDown, { passive: false });
+window.addEventListener('touchmove', onPointerMove, { passive: false });
+window.addEventListener('touchend', onPointerUp);
 els.mapWrapper.addEventListener('wheel', (e) => {
-  e.preventDefault();
-  const rect = els.mapWrapper.getBoundingClientRect();
-  const mouseX = e.clientX - rect.left; const mouseY = e.clientY - rect.top;
-  const mouseBeforeZoomX = (mouseX - panX) / scale; const mouseBeforeZoomY = (mouseY - panY) / scale;
-  const newScale = scale * (e.deltaY > 0 ? 0.9 : 1.1);
-  scale = Math.min(Math.max(getMinScale(), newScale), 3);
-  panX = mouseX - mouseBeforeZoomX * scale; panY = mouseY - mouseBeforeZoomY * scale;
-  updateMapTransform();
+    e.preventDefault();
+    const rect = els.mapWrapper.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left; 
+    const mouseY = e.clientY - rect.top;
+    const pointX = (mouseX - panX) / scale;
+    const pointY = (mouseY - panY) / scale;
+    
+    scale *= e.deltaY > 0 ? 0.9 : 1.1;
+    updateMapTransform(); // Pre-clamp scale
+    
+    panX = mouseX - pointX * scale;
+    panY = mouseY - pointY * scale;
+    updateMapTransform();
 }, { passive: false });
+// ===============================================================
 
 const mapResizeObserver = new ResizeObserver(() => { setInitialMapState(); });
 mapResizeObserver.observe(els.mapWrapper);
@@ -437,10 +512,7 @@ els.sidebarTabs.addEventListener('click', (e) => {
 
 function isShopOpen(shop, hour) {
     if (shop.open === null || shop.close === null) return false;
-    // This logic correctly handles shops that are open past midnight, assuming close time is < open time
-    if (shop.open > shop.close) {
-        return hour >= shop.open || hour < shop.close;
-    }
+    if (shop.open > shop.close) return hour >= shop.open || hour < shop.close;
     return hour >= shop.open && hour < shop.close;
 }
 
@@ -460,10 +532,7 @@ function updateSliderBackground(hour) {
 function updateShopStatus(hour) {
   document.querySelectorAll('.shop-pin').forEach(pin => {
     const shop = SHOPS.find(s => s.id === pin.dataset.id);
-    if (shop) {
-        const isOpen = isShopOpen(shop, hour);
-        pin.classList.toggle('closed', !isOpen);
-    }
+    if (shop) pin.classList.toggle('closed', !isShopOpen(shop, hour));
   });
   if(currentShop) showDetail(currentShop.id, false);
 }
@@ -472,21 +541,12 @@ function updateCongestion(hour) {
     els.congestionOverlay.innerHTML = '';
     const levels = CONGESTION_DATA.byHour[hour];
     if (!levels) return;
-
     CONGESTION_DATA.zones.forEach((zone, i) => {
         const level = levels[i];
         if (level === 0) return;
-        
         const dot = document.createElement('div');
         dot.className = 'congestion-zone';
-        dot.style.cssText = `
-            left: ${zone.x}px;
-            top: ${zone.y}px;
-            width: ${zone.radius}px;
-            height: ${zone.radius}px;
-            transform: translate(-50%, -50%);
-            background-color: ${CONGESTION_COLORS[level]};
-        `;
+        dot.style.cssText = `left:${zone.x}px; top:${zone.y}px; width:${zone.radius}px; height:${zone.radius}px; transform:translate(-50%,-50%); background-color:${CONGESTION_COLORS[level]};`;
         els.congestionOverlay.appendChild(dot);
     });
 }
@@ -496,48 +556,33 @@ function createPin(shop) {
   pin.className = `shop-pin`;
   pin.style.cssText = `left:${shop.x}px; top:${shop.y}px;`;
   pin.dataset.id = shop.id;
-  pin.innerHTML = `
-    <button>
-      <div class="icon">${shop.icon || '🏪'}</div>
-      <div class="name">${shop.name}</div>
-      <span class="tooltip">${shop.desc || '정보 없음'}</span>
-    </button>
-  `;
-  pin.querySelector('button').onclick = (e) => {
-    if(!isMapDragging) showDetail(shop.id, true);
-  };
+  pin.innerHTML = `<button><div class="icon">${shop.icon||'🏪'}</div><div class="name">${shop.name}</div><span class="tooltip">${shop.desc||'정보 없음'}</span></button>`;
+  pin.querySelector('button').addEventListener('click', (e) => {
+    if (!didPan) showDetail(shop.id, true);
+  });
   return pin;
 }
 
 function showDetail(shopId, centerAndZoom = true) {
     const shop = SHOPS.find(s => s.id === shopId);
     if (!shop) return;
-    
     currentShop = shop;
-    
     document.querySelectorAll('.shop-pin.active, .list-item.active').forEach(el => el.classList.remove('active'));
     document.querySelector(`.shop-pin[data-id="${shopId}"]`)?.classList.add('active');
     document.querySelector(`.list-item[data-id="${shopId}"]`)?.classList.add('active');
-
     openSidebar('info');
     els.shopDetail.classList.remove('hide');
     els.shopListContainer.classList.add('hide');
-
     els.detailName.textContent = shop.name;
     els.detailDesc.textContent = shop.desc || '상세 정보가 없습니다.';
-    
     els.detailTags.innerHTML = `<span class="tag">${shop.category}</span>`;
     if(shop.goodtrae) els.detailTags.innerHTML += `<span class="tag goodtrae">굿뜨레페이 가능</span>`;
-
     const isOpen = isShopOpen(shop, currentHour);
     const hoursText = (shop.open !== null && shop.close !== null) ? `${shop.open}:00 ~ ${shop.close}:00` : '정보 없음';
     els.detailHours.innerHTML = `⏰ <span>영업시간: ${hoursText}</span> <span class="status-indicator ${isOpen ? 'status-open' : 'status-closed'}">${isOpen ? '영업중' : '영업종료'}</span>`;
-    
     els.detailPhone.innerHTML = `📞 <span>연락처: ${shop.phone || '정보 없음'}</span>`;
-
     if (centerAndZoom) {
-        const minScale = getMinScale();
-        scale = Math.max(1.5, minScale); 
+        scale = Math.max(1.2, getMinScale()); 
         panX = -shop.x * scale + els.mapWrapper.clientWidth / 2;
         panY = -shop.y * scale + els.mapWrapper.clientHeight / 2;
         updateMapTransform();
@@ -548,26 +593,20 @@ function filterShops() {
     const searchTerm = els.searchInput.value.toLowerCase();
     const activeCategory = els.categoryFilters.querySelector('.active').dataset.category;
     const goodtraeOnly = els.goodtraeCheck.checked;
-
     let visibleCount = 0;
-
     SHOPS.forEach(shop => {
         const pin = document.querySelector(`.shop-pin[data-id="${shop.id}"]`);
         if (!pin) return;
-        
         const nameMatch = shop.name.toLowerCase().includes(searchTerm);
         const descMatch = shop.desc && shop.desc.toLowerCase().includes(searchTerm);
         const categoryMatch = activeCategory === 'all' || shop.category === activeCategory;
         const goodtraeMatch = !goodtraeOnly || shop.goodtrae;
-        
         const isVisible = (nameMatch || descMatch) && categoryMatch && goodtraeMatch;
         pin.classList.toggle('dimmed', !isVisible);
         pin.style.pointerEvents = isVisible ? 'auto' : 'none';
         if (isVisible) visibleCount++;
     });
-
     renderList();
-    
     if (visibleCount === 0 && (searchTerm || activeCategory !== 'all' || goodtraeOnly)) {
         els.listTitle.textContent = "검색 결과 없음";
     } else if (!currentShop) {
@@ -579,7 +618,6 @@ function renderList() {
     const searchTerm = els.searchInput.value.toLowerCase();
     const activeCategory = els.categoryFilters.querySelector('.active').dataset.category;
     const goodtraeOnly = els.goodtraeCheck.checked;
-    
     const filteredShops = SHOPS.filter(shop => {
         const nameMatch = shop.name.toLowerCase().includes(searchTerm);
         const descMatch = shop.desc && shop.desc.toLowerCase().includes(searchTerm);
@@ -587,12 +625,10 @@ function renderList() {
         const goodtraeMatch = !goodtraeOnly || shop.goodtrae;
         return (nameMatch || descMatch) && categoryMatch && goodtraeMatch;
     });
-
     els.list.innerHTML = filteredShops.map(shop => {
         const activeClass = currentShop && currentShop.id === shop.id ? 'active' : '';
         return `<button class="list-item ${activeClass}" data-id="${shop.id}">${shop.name}</button>`;
     }).join('');
-
     document.querySelectorAll('.list-item').forEach(item => {
         item.addEventListener('click', () => showDetail(item.dataset.id, true));
     });
@@ -601,14 +637,10 @@ function renderList() {
 function init() {
     SHOPS.forEach(shop => els.map.appendChild(createPin(shop)));
     setInitialMapState();
-    
-    const now = new Date();
-    const initialHour = now.getHours();
+    const initialHour = new Date().getHours();
     els.timeSlider.value = initialHour;
     updateTime(initialHour);
-    
     els.searchInput.addEventListener('input', filterShops);
-    
     els.categoryFilters.addEventListener('click', e => {
         if(e.target.tagName === 'BUTTON'){
             els.categoryFilters.querySelector('.active').classList.remove('active');
@@ -616,13 +648,12 @@ function init() {
             filterShops();
         }
     });
-
     els.goodtraeCheck.addEventListener('change', () => {
         els.goodtraeCheck.parentElement.classList.toggle('active', els.goodtraeCheck.checked);
         filterShops();
     });
-
     els.timeSlider.addEventListener('input', e => updateTime(parseInt(e.target.value, 10)));
+    els.resetViewBtn.addEventListener('click', setInitialMapState); // NEW: 초기화 버튼 이벤트
 }
 
 init();
