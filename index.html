@@ -298,12 +298,10 @@ const SHOPS = [
   { id:"c3", name:"중앙포목", category:"의류/잡화", icon:"🧵", phone:"", desc:"원단 및 부자재", x:2030, y:475, open:9, close:18, goodtrae:false},
   { id:"c2", name:"부여칼국수", category:"음식점", icon:"🍜", phone:"", desc:"손칼국수 전문", x:2100, y:475, open:11, close:20, goodtrae:true},
 ];
-
 // ===============================================================
 // 💡 혼잡도 데이터 수정 가이드
 // 1. zones: 혼잡도 음영이 표시될 [위치(x,y), 크기(radius)]를 설정합니다.
 // 2. byHour: 시간대별로 각 zone의 혼잡도를 [0:여유, 1:보통, 2:혼잡]으로 설정합니다.
-//    (예: 10시의 [2,2,1..] -> 0번 zone은 '혼잡', 1번 zone은 '혼잡', 2번 zone은 '보통')
 // ===============================================================
 const CONGESTION_DATA = {
   zones: [
@@ -341,6 +339,7 @@ const els = {
 let currentShop = null, currentHour = 12;
 let scale = 1, panX = 0, panY = 0;
 let startPos = { x: 0, y: 0 }, lastPan = { x: 0, y: 0 };
+let isMapDragging = false;
 
 function updateMapTransform() {
   const minScale = getMinScale(); scale = Math.max(minScale, scale);
@@ -360,25 +359,38 @@ function setInitialMapState() {
 }
 
 const handleDragMove = (e) => {
-    const currentX = e.clientX || e.touches[0].clientX;
-    const currentY = e.clientY || e.touches[0].clientY;
-    panX = lastPan.x + (currentX - startPos.x); panY = lastPan.y + (currentY - startPos.y);
-    updateMapTransform();
+    if (!isMapDragging) {
+        const currentX = e.clientX || e.touches[0].clientX;
+        const currentY = e.clientY || e.touches[0].clientY;
+        if (Math.hypot(currentX - startPos.x, currentY - startPos.y) > 10) {
+            isMapDragging = true;
+        }
+    }
+    if (isMapDragging) {
+        if(e.cancelable) e.preventDefault();
+        const currentX = e.clientX || e.touches[0].clientX;
+        const currentY = e.clientY || e.touches[0].clientY;
+        panX = lastPan.x + (currentX - startPos.x); panY = lastPan.y + (currentY - startPos.y);
+        updateMapTransform();
+    }
 };
-const handleDragEnd = () => {
+const handleDragEnd = (e) => {
+    if(isMapDragging && e.cancelable) e.preventDefault();
     window.removeEventListener('mousemove', handleDragMove); window.removeEventListener('mouseup', handleDragEnd);
     window.removeEventListener('touchmove', handleDragMove); window.removeEventListener('touchend', handleDragEnd);
 };
 els.mapWrapper.addEventListener('mousedown', (e) => {
-    e.preventDefault(); startPos = { x: e.clientX, y: e.clientY }; lastPan = { x: panX, y: panY };
+    e.preventDefault(); isMapDragging = false;
+    startPos = { x: e.clientX, y: e.clientY }; lastPan = { x: panX, y: panY };
     window.addEventListener('mousemove', handleDragMove); window.addEventListener('mouseup', handleDragEnd);
 });
 els.mapWrapper.addEventListener('touchstart', (e) => {
     if (e.touches.length === 1) {
-        e.preventDefault(); startPos = { x: e.touches[0].clientX, y: e.touches[0].clientY }; lastPan = { x: panX, y: panY };
+        isMapDragging = false;
+        startPos = { x: e.touches[0].clientX, y: e.touches[0].clientY }; lastPan = { x: panX, y: panY };
         window.addEventListener('touchmove', handleDragMove, { passive: false }); window.addEventListener('touchend', handleDragEnd);
     }
-});
+}, { passive: false });
 els.mapWrapper.addEventListener('wheel', (e) => {
   e.preventDefault();
   const rect = els.mapWrapper.getBoundingClientRect();
