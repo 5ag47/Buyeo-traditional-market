@@ -77,10 +77,6 @@
     box-shadow:var(--shadow-md); touch-action:none; cursor:grab;
   }
   .market-map{ position:relative; width:2400px; height:600px; transform-origin:0 0; background-color: #E9E0D2; }
-
-  /* ===============================================================
-   * 💡 지도 디자인(색상, 디테일) CSS 수정 가이드
-   * =============================================================== */
   .shop-area { position: absolute; left: 0; right: 0; background-color: #DCD7CD; }
   .area-top { top: 0; height: 250px; }
   .area-bottom { bottom: 0; height: 250px; }
@@ -88,11 +84,10 @@
   .main-road::after { content: ''; position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%); height: 4px; background: repeating-linear-gradient(to right, #F7D716 0, #F7D716 20px, transparent 20px, transparent 40px); }
   .parking-lot { position: absolute; background: #C8BCA8; border: 2px solid #B3ADA2; display: flex; align-items: center; justify-content: center; color: #5A5245; font-weight: bold; font-size: 1.5rem; box-shadow: inset 0 0 5px rgba(0,0,0,0.1); }
   .alley { position: absolute; top: 0; bottom: 0; width: 25px; background: #E9E0D2; box-shadow: inset 0 0 8px rgba(0,0,0,0.1); }
-  /* =============================================================== */
-
+  
   .congestion-overlay{ position:absolute; inset:0; pointer-events:none; transition:opacity 0.3s ease; }
   .congestion-zone{ position:absolute; border-radius:50%; filter:blur(60px); opacity:0.35; }
-
+  
   .shop-pin{ position:absolute; transform:translate(-50%,-50%); z-index:10; transition:opacity 0.3s ease, filter 0.3s ease; }
   .shop-pin.dimmed, .shop-pin.closed{ opacity:0.3; filter:grayscale(80%); }
   .shop-pin button{ display:flex; flex-direction:column; align-items:center; gap:6px; padding:8px; background:white; border:2px solid var(--gray-300); border-radius:16px; cursor:pointer; transition:all 0.3s cubic-bezier(0.4,0,0.2,1); box-shadow:var(--shadow-sm); position:relative; }
@@ -101,7 +96,6 @@
   .shop-pin .icon{ width:48px; height:48px; font-size:36px; display:flex; align-items:center; justify-content:center; }
   .shop-pin .name{ 
     font-size:0.8rem; font-weight:600; max-width:120px; text-align:center; line-height:1.3; color:var(--gray-800);
-    /* 버튼 크기 통일을 위한 고정 높이 */
     height: 2.2em; display: flex; align-items: center; justify-content: center;
   }
   .shop-pin .tooltip { visibility: hidden; width: 160px; background-color: var(--gray-800); color: #fff; text-align: center; border-radius: 6px; padding: 8px; position: absolute; z-index: 1001; bottom: 110%; left: 50%; margin-left: -80px; opacity: 0; transition: opacity 0.3s; font-size: 0.85rem; pointer-events: none; }
@@ -238,15 +232,6 @@
 // ===============================================================
 // 💡 가게 데이터 수정 가이드
 // 이 배열에 가게 정보를 추가, 수정, 삭제하세요.
-// id: 고유 식별자 (필수, 중복 불가)
-// name: 가게 이름
-// category: 업종 (필터 버튼과 일치해야 함)
-// icon: 지도에 표시될 이모지
-// phone: 전화번호
-// desc: 가게 한 줄 설명 (지도에 마우스 올리면 표시됨)
-// x, y: 지도 위 좌표 (가로 0~2400, 세로 0~600)
-// open, close: 영업시간 (24시간 기준 숫자), 영업 안하면 null
-// goodtrae: 굿뜨레페이 가맹점 여부 (true/false)
 // ===============================================================
 const SHOPS = [
   { id:"t1", name:"화랑회수산", category:"수/축산물", icon:"🐟", phone:"010-8606-6472", desc:"조개, 전복, 홍어 등", x:2370, y:125, open:9, close:18, goodtrae: true },
@@ -267,22 +252,22 @@ const SHOPS = [
   { id:"t16", name:"부산상회", category:"가공/즉석식품", icon:"🦑", phone:"041-835-4585", desc:"건오징어 전문", x:1320, y:125, open:9, close:19, goodtrae: false },
   { id:"t17", name:"덕성상회", category:"가공/즉석식품", icon:"🫚", phone:"041-832-8485", desc:"생각, 더덕 취급", x:1250, y:125, open:10, close:20, goodtrae: false },
   { id:"t18", name:"오미떡집", category:"가공/즉석식품", icon:"🍡", phone:"041-833-6268", desc:"전통있는 가래떡집", x:1180, y:125, open:10, close:18, goodtrae: false },
-  { id:"t19", name:"자갈치회센타", category:"수/축산물", icon:"🐟", phone:"041-833-5959", desc:"모둠회, 연어회 전문", x:1060, y:125, open:11, close:20, goodtrae: true },
-  { id:"t20", name:"용전떡집", category:"가공/즉석식품", icon:"🍡", phone:"041-833-8530", desc:"따끈한 떡 판매", x:990, y:125, open:10, close:18, goodtrae: true },
-  { id:"t21", name:"정가연 미용실", category:"기타", icon:"💇‍♀️", phone:"010-1234-5678", desc:"최신헤어스타일링", x:920, y:125, open:10, close:19, goodtrae: false },
-  { id:"t22", name:"고향촌", category:"음식점", icon:"🍲", phone:"010-1234-5678", desc:"삼겹살, 보리밥, 김치찌개", x:850, y:125, open:13, close:20, goodtrae: true },
-  { id:"t23", name:"서울닭집", category:"수/축산물", icon:"🐔", phone:"010-1234-5678", desc:"시골 통닭구이", x:780, y:125, open:9, close:19, goodtrae: true },
-  { id:"t24", name:"이화 양장수선", category:"의류/잡화", icon:"🥼", phone:"041-832-9491", desc:"하루면 옷수선", x:710, y:125, open:10, close:18, goodtrae: true },
-  { id:"t25", name:"제일상회", category:"의류/잡화", icon:"🖼️", phone:"041-834-4115", desc:"없는 것 빼고 다 있음", x:640, y:125, open:9, close:18, goodtrae: false },
-  { id:"t26", name:"장터한우국밥", category:"음식점", icon:"🍲", phone:"041-834-4377", desc:"한우를 쓴 전통국밥", x:570, y:125, open:9, close:19, goodtrae: true },
-  { id:"t27", name:"충남상회", category:"가공/즉석식품", icon:"🦐", phone:"041-835-2086", desc:"젓갈류 취급", x:500, y:125, open:10, close:18, goodtrae: false },
-  { id:"t28", name:"쪼물쪼물엄마손맛찬집", category:"가공/즉석식품", icon:"🍱", phone:"041-836-2461", desc:"엄마손맛으로 만든 반찬", x:430, y:125, open:13, close:20, goodtrae: true },
-  { id:"t29", name:"령천암", category:"기타", icon:"🔔", phone:"010-6435-0863", desc:"점, 사주, 타로 가능", x:360, y:125, open:15, close:20, goodtrae: false },
-  { id:"t30", name:"김현경 헤어샵", category:"기타", icon:"💇‍♀️", phone:"041-832-7557", desc:"고양이 상주중", x:290, y:125, open:10, close:18, goodtrae: false },
-  { id:"t31", name:"기뮤공방", category:"의류/잡화", icon:"🌳", phone:"010-1234-5678", desc:"수공예제품 판매", x:170, y:125, open:15, close:20, goodtrae: false },
-  { id:"t32", name:"투데이 충남", category:"기타", icon:"📰", phone:"041-832-5884", desc:"투데이 충남을 발간합니다", x:100, y:125, open: null, close: null, goodtrae: false },
-  { id:"t33", name:"한국소", category:"의류/잡화", icon:"🥼", phone:"041-833-7500", desc:"맞춤한복 제작", x:520, y:215, open:13, close:19, goodtrae: false },
-  { id:"t34", name:"저팔계", category:"음식점", icon:"🥓", phone:"041-833-5885", desc:"돼지고기구이, 삼겹살", x:240, y:215, open:null, close:null, goodtrae: true },
+  { id:"t19", name:"자갈치회센타", category:"수/축산물", icon:"🐟", phone:"041-833-5959", desc:"모둠회, 연어회 전문", x:1110, y:125, open:11, close:20, goodtrae: true },
+  { id:"t20", name:"용전떡집", category:"가공/즉석식품", icon:"🍡", phone:"041-833-8530", desc:"따끈한 떡 판매", x:1040, y:125, open:10, close:18, goodtrae: true },
+  { id:"t21", name:"정가연 미용실", category:"기타", icon:"💇‍♀️", phone:"010-1234-5678", desc:"최신헤어스타일링", x:970, y:125, open:10, close:19, goodtrae: false },
+  { id:"t22", name:"고향촌", category:"음식점", icon:"🍲", phone:"010-1234-5678", desc:"삼겹살, 보리밥, 김치찌개", x:900, y:125, open:13, close:20, goodtrae: true },
+  { id:"t23", name:"서울닭집", category:"수/축산물", icon:"🐔", phone:"010-1234-5678", desc:"시골 통닭구이", x:830, y:125, open:9, close:19, goodtrae: true },
+  { id:"t24", name:"이화 양장수선", category:"의류/잡화", icon:"🥼", phone:"041-832-9491", desc:"하루면 옷수선", x:760, y:125, open:10, close:18, goodtrae: true },
+  { id:"t25", name:"제일상회", category:"의류/잡화", icon:"🖼️", phone:"041-834-4115", desc:"없는 것 빼고 다 있음", x:690, y:125, open:9, close:18, goodtrae: false },
+  { id:"t26", name:"장터한우국밥", category:"음식점", icon:"🍲", phone:"041-834-4377", desc:"한우를 쓴 전통국밥", x:620, y:125, open:9, close:19, goodtrae: true },
+  { id:"t27", name:"충남상회", category:"가공/즉석식품", icon:"🦐", phone:"041-835-2086", desc:"젓갈류 취급", x:550, y:125, open:10, close:18, goodtrae: false },
+  { id:"t28", name:"쪼물쪼물엄마손맛찬집", category:"가공/즉석식품", icon:"🍱", phone:"041-836-2461", desc:"엄마손맛으로 만든 반찬", x:480, y:125, open:13, close:20, goodtrae: true },
+  { id:"t29", name:"령천암", category:"기타", icon:"🔔", phone:"010-6435-0863", desc:"점, 사주, 타로 가능", x:410, y:125, open:15, close:20, goodtrae: false },
+  { id:"t30", name:"김현경 헤어샵", category:"기타", icon:"💇‍♀️", phone:"041-832-7557", desc:"고양이 상주중", x:340, y:125, open:10, close:18, goodtrae: false },
+  { id:"t31", name:"기뮤공방", category:"의류/잡화", icon:"🌳", phone:"010-1234-5678", desc:"수공예제품 판매", x:270, y:125, open:15, close:20, goodtrae: false },
+  { id:"t32", name:"투데이 충남", category:"기타", icon:"📰", phone:"041-832-5884", desc:"투데이 충남을 발간합니다", x:200, y:125, open: null, close: null, goodtrae: false },
+  { id:"t33", name:"한국소", category:"의류/잡화", icon:"🥼", phone:"041-833-7500", desc:"맞춤한복 제작", x:130, y:125, open:13, close:19, goodtrae: false },
+  { id:"t34", name:"저팔계", category:"음식점", icon:"🥓", phone:"041-833-5885", desc:"돼지고기구이, 삼겹살", x:60, y:125, open:null, close:null, goodtrae: true },
 
   { id:"b1", name:"송이상회", category:"과채류", icon:"🍎", phone:"041-836-3625", desc:"과일·채소", x:70, y:475, open:7, close:21, goodtrae:false},
   { id:"b2", name:"기술자 떡집", category:"가공/즉석식품", icon:"🍡", phone:"041-832-9364", desc:"모시송편, 맞춤떡", x:140, y:475, open:8, close:18, goodtrae:false},
@@ -303,17 +288,42 @@ const SHOPS = [
   { id:"b19", name:"아름 상회", category:"과채류", icon:"🥒", phone:"010-3417-5326", desc:"야채·나물", x:1260, y:475, open:8, close:19, goodtrae:false},
   { id:"b20", name:"자연고추 상회", category:"가공/즉석식품", icon:"🫚", phone:"041-835-8836", desc:"고추·마늘·기름", x:1330, y:475, open:8, close:18, goodtrae:false},
   { id:"b22a", name:"부뚜막 식당", category:"음식점", icon:"🍜", phone:"?", desc:"칼국수", x:1470, y:475, open:10, close:20, goodtrae:false},
-  { id:"b22b", name:"Fat burger slim", category:"음식점", icon:"🍔", phone:"?", desc:"수제 햄버거", x:1540, y:125, open:11, close:21, goodtrae:false},
-  { id:"b23", name:"왕곰탕", category:"음식점", icon:"🍲", phone:"041-835-3243", desc:"곰탕·양곰탕·도가니탕·수육", x:1610, y:125, open:9, close:21, goodtrae:true},
-  { id:"b24a", name:"wednesday", category:"의류/잡화", icon:"🍺", phone:"041-837-0795", desc:"감성 바", x:1680, y:125, open:14, close:23, goodtrae:true},
-  { id:"b24b", name:"SADAM", category:"음식점", icon:"🍶", phone:"041-837-0795", desc:"주류 판매", x:1750, y:125, open:12, close:22, goodtrae:true},
+  { id:"b22b", name:"Fat burger slim", category:"음식점", icon:"🍔", phone:"?", desc:"수제 햄버거", x:1540, y:475, open:11, close:21, goodtrae:false},
+  { id:"b23", name:"왕곰탕", category:"음식점", icon:"🍲", phone:"041-835-3243", desc:"곰탕·양곰탕·도가니탕·수육", x:1610, y:475, open:9, close:21, goodtrae:true},
+  { id:"b24a", name:"wednesday", category:"의류/잡화", icon:"🍺", phone:"041-837-0795", desc:"감성 바", x:1680, y:475, open:14, close:23, goodtrae:true},
+  { id:"b24b", name:"SADAM", category:"음식점", icon:"🍶", phone:"041-837-0795", desc:"주류 판매", x:1750, y:475, open:12, close:22, goodtrae:true},
   { id:"b24c", name:"대화 할인마트", category:"가공/즉석식품", icon:"🛒", phone:"041-837-0795", desc:"생활용품", x:1820, y:475, open:8, close:21, goodtrae:true},
-  { id:"c1", name:"구름 한조각", category:"음식점", icon:"🍰", phone:"", desc:"디저트 카페", x:1890, y:125, open:12, close:19, goodtrae:false},
+  { id:"c1", name:"구름 한조각", category:"음식점", icon:"🍰", phone:"", desc:"디저트 카페", x:1890, y:475, open:12, close:19, goodtrae:false},
   { id:"c4", name:"종로엠스쿨", category:"기타", icon:"🏫", phone:"", desc:"학원", x:1960, y:475, open:12, close:22, goodtrae:false},
   { id:"c3", name:"중앙포목", category:"의류/잡화", icon:"🧵", phone:"", desc:"원단 및 부자재", x:2030, y:475, open:9, close:18, goodtrae:false},
   { id:"c2", name:"부여칼국수", category:"음식점", icon:"🍜", phone:"", desc:"손칼국수 전문", x:2100, y:475, open:11, close:20, goodtrae:true},
 ];
-const CONGESTION_DATA = {"zones":[{"x":600,"y":125,"radius":200},{"x":1200,"y":125,"radius":200},{"x":1800,"y":125,"radius":200},{"x":600,"y":475,"radius":200},{"x":1200,"y":475,"radius":200},{"x":1800,"y":475,"radius":200},{"x":1200,"y":300,"radius":250}],"byHour":{"0":[0,0,0,0,0,0,0],"1":[0,0,0,0,0,0,0],"2":[0,0,0,0,0,0,0],"3":[0,0,0,0,0,0,0],"4":[0,0,0,0,0,0,0],"5":[0,0,0,0,0,0,0],"6":[0,1,0,0,1,0,0],"7":[1,1,0,1,1,1,1],"8":[1,2,1,1,2,1,2],"9":[2,2,1,2,2,2,2],"10":[2,2,2,2,2,2,2],"11":[2,2,2,2,2,2,2],"12":[2,2,2,2,2,2,2],"13":[2,2,1,2,2,1,2],"14":[1,2,1,1,1,1,1],"15":[1,1,1,1,1,1,1],"16":[1,1,1,1,1,1,1],"17":[2,1,1,2,2,1,2],"18":[2,2,1,2,2,2,2],"19":[1,1,0,1,1,1,1],"20":[0,1,0,0,0,0,0],"21":[0,0,0,0,0,0,0],"22":[0,0,0,0,0,0,0],"23":[0,0,0,0,0,0,0]}};
+
+// ===============================================================
+// 💡 혼잡도 데이터 수정 가이드
+// 1. zones: 혼잡도 음영이 표시될 [위치(x,y), 크기(radius)]를 설정합니다.
+// 2. byHour: 시간대별로 각 zone의 혼잡도를 [0:여유, 1:보통, 2:혼잡]으로 설정합니다.
+//    (예: 10시의 [2,2,1..] -> 0번 zone은 '혼잡', 1번 zone은 '혼잡', 2번 zone은 '보통')
+// ===============================================================
+const CONGESTION_DATA = {
+  zones: [
+    { x: 500, y: 125, radius: 400 },   // 윗줄 왼쪽
+    { x: 1200, y: 125, radius: 400 },  // 윗줄 중앙
+    { x: 1900, y: 125, radius: 400 },  // 윗줄 오른쪽
+    { x: 500, y: 475, radius: 400 },   // 아랫줄 왼쪽
+    { x: 1200, y: 475, radius: 400 },  // 아랫줄 중앙
+    { x: 1900, y: 475, radius: 400 },  // 아랫줄 오른쪽
+    { x: 1200, y: 300, radius: 300 }   // 중앙 도로
+  ],
+  byHour: {
+    0:[0,0,0,0,0,0,0], 1:[0,0,0,0,0,0,0], 2:[0,0,0,0,0,0,0], 3:[0,0,0,0,0,0,0],
+    4:[0,0,0,0,0,0,0], 5:[0,0,0,0,0,0,0], 6:[0,1,0,0,1,0,0], 7:[1,1,0,1,1,1,1],
+    8:[1,2,1,1,2,1,2], 9:[2,2,1,2,2,2,2], 10:[2,2,2,2,2,2,2], 11:[2,2,2,2,2,2,2],
+    12:[2,2,2,2,2,2,2], 13:[2,2,1,2,2,1,2], 14:[1,2,1,1,1,1,1], 15:[1,1,1,1,1,1,1],
+    16:[1,1,1,1,1,1,1], 17:[2,1,1,2,2,1,2], 18:[2,2,1,2,2,2,2], 19:[1,1,0,1,1,1,1],
+    20:[0,1,0,0,0,0,0], 21:[0,0,0,0,0,0,0], 22:[0,0,0,0,0,0,0], 23:[0,0,0,0,0,0,0]
+  }
+};
 const CONGESTION_COLORS = ['#10b981', '#f59e0b', '#ef4444'];
 
 const els = {
@@ -426,6 +436,7 @@ function updateTime(hour) {
   els.timeDisplay.textContent = `${String(hour).padStart(2, '0')}:00`;
   updateShopStatus(hour);
   updateSliderBackground(hour);
+  updateCongestion(hour);
 }
 
 function updateSliderBackground(hour) {
@@ -439,6 +450,29 @@ function updateShopStatus(hour) {
     if (shop) pin.classList.toggle('closed', !isShopOpen(shop, hour));
   });
   if(currentShop) showDetail(currentShop.id, false);
+}
+
+function updateCongestion(hour) {
+    els.congestionOverlay.innerHTML = '';
+    const levels = CONGESTION_DATA.byHour[hour];
+    if (!levels) return;
+
+    CONGESTION_DATA.zones.forEach((zone, i) => {
+        const level = levels[i];
+        if (level === 0) return;
+        
+        const dot = document.createElement('div');
+        dot.className = 'congestion-zone';
+        dot.style.cssText = `
+            left: ${zone.x}px;
+            top: ${zone.y}px;
+            width: ${zone.radius}px;
+            height: ${zone.radius}px;
+            transform: translate(-50%, -50%);
+            background-color: ${CONGESTION_COLORS[level]};
+        `;
+        els.congestionOverlay.appendChild(dot);
+    });
 }
 
 function createPin(shop) {
